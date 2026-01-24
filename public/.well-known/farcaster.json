@@ -1,0 +1,27 @@
+{
+    "frame": {
+        "name": "ZLKcyber AI",
+        "version": "1",
+        "iconUrl": "https://zlkcyber.tech/icon.png",
+        "homeUrl": "https://zlkcyber.tech",
+        "buttonTitle": "Launch ZLKcyber AI",
+        "splashImageUrl": "https://zlkcyber.tech/opengraph-image.png",
+        "splashBackgroundColor": "#0f172a",
+        "subtitle": "AI chat and image generation ",
+        "description": "AI-powered chat and image generation using ZLKcyber AI",
+        "primaryCategory": "art-creativity",
+        "tags": [
+            "art",
+            "chat",
+            "image",
+            "generator",
+            "video"
+        ],
+        "tagline": "Simple AI for ideas and images"
+    },
+    "accountAssociation": {
+        "header": "eyJmaWQiOjIxMzIyMiwidHlwZSI6ImF1dGgiLCJrZXkiOiIweGNhQjkzOTQyMDYwNDhiRDY4ZjZFMEY5QzRkQjM2NTBjMjM0YmVCODQifQ",
+        "payload": "eyJkb21haW4iOiJ6bGtjeWJlci50ZWNoIn0",
+        "signature": "geb+TPHja5DaZWjAKcXL1NmggM9/xEvVRcO7x9+CrvNGleWGzSTA48P0eeusvaVEZ3kgXotfshvkMXyXeqllPhw="
+    }
+}

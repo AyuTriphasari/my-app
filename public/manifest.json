@@ -1,0 +1,27 @@
+{
+    "name": "ZLKcyber AI",
+    "short_name": "ZLKcyber",
+    "description": "AI-powered chat and image generation using ZLKcyber AI",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#0f172a",
+    "icons": [
+        {
+            "src": "/favicon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/opengraph-image.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "orientation": "portrait",
+    "categories": [
+        "artificial_intelligence",
+        "productivity",
+        "utilities"
+    ]
+}
