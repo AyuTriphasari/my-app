@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { generateVideo, saveVideoToGallery, GeneratedImage, getVideoGallery, clearVideoGallery } from '@/lib/pollination';
+import { generateVideo, saveVideoToGallery, GeneratedImage, getVideoGallery, clearVideoGallery, uploadImageToR2 } from '@/lib/pollination';
 import { useConfirm } from '@/app/components/ConfirmModal';
 
 const API_KEY_STORAGE = 'pollination_api_key';
@@ -33,6 +33,12 @@ export default function VideoPage() {
     const [history, setHistory] = useState<GeneratedImage[]>([]);
     const [selectedHistoryVideo, setSelectedHistoryVideo] = useState<GeneratedImage | null>(null);
     const [viewVideo, setViewVideo] = useState<{ url: string; prompt: string } | null>(null);
+    // Reference image state
+    const [referenceImage, setReferenceImage] = useState<File | null>(null);
+    const [referenceImagePreview, setReferenceImagePreview] = useState<string>('');
+    const [referenceImageUrl, setReferenceImageUrl] = useState<string>('');
+    const [isUploading, setIsUploading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [settings, setSettings] = useState({
         width: 1024,
         height: 1024,
@@ -80,6 +86,24 @@ export default function VideoPage() {
         localStorage.removeItem(API_KEY_STORAGE);
     };
 
+    // Handle reference image selection
+    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setReferenceImage(file);
+            const objectUrl = URL.createObjectURL(file);
+            setReferenceImagePreview(objectUrl);
+            setReferenceImageUrl(''); // Clear cached URL when new file selected
+        }
+    };
+
+    // Clear reference image
+    const handleClearReferenceImage = () => {
+        setReferenceImage(null);
+        setReferenceImagePreview('');
+        setReferenceImageUrl('');
+    };
+
     const handleGenerate = async () => {
         if (!prompt.trim()) return;
 
@@ -87,15 +111,28 @@ export default function VideoPage() {
         setGeneratedVideo(null);
 
         try {
+            // Upload reference image if selected and not already uploaded
+            let imageUrl = referenceImageUrl;
+            if (referenceImage && !imageUrl) {
+                setIsUploading(true);
+                try {
+                    imageUrl = await uploadImageToR2(referenceImage);
+                    setReferenceImageUrl(imageUrl);
+                } finally {
+                    setIsUploading(false);
+                }
+            }
+
             const randomSeed = Math.floor(Math.random() * 2147483647);
-            console.log('Generating video with seed:', randomSeed);
+            console.log('Generating video with seed:', randomSeed, imageUrl ? 'with reference image' : '');
 
             const videoUrl = await generateVideo(prompt, {
                 ...settings,
                 seed: randomSeed,
                 apiKey: apiKey || undefined,
                 duration: settings.duration,
-                aspectRatio: settings.aspectRatio
+                aspectRatio: settings.aspectRatio,
+                imageUrl: imageUrl || undefined
             });
 
             setGeneratedVideo(videoUrl);
@@ -114,7 +151,7 @@ export default function VideoPage() {
         } catch (error) {
             console.error('Failed to generate video:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to generate video. Please try again.';
-            alert(`Error: ${errorMessage}`);
+            setError(errorMessage);
         } finally {
             setIsGenerating(false);
         }
@@ -223,6 +260,68 @@ export default function VideoPage() {
                     <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                         {/* Left Column - Controls */}
                         <div className="space-y-4 md:space-y-6">
+                            {/* Reference Image Upload */}
+                            <div className="bg-zinc-900 border border-white/5 rounded-xl p-5">
+                                <div className="flex items-center justify-between mb-3">
+                                    <label className="block text-sm font-medium text-zinc-200">
+                                        Reference Image <span className="text-zinc-500 text-xs font-normal">(Optional)</span>
+                                    </label>
+                                    {referenceImage && (
+                                        <button
+                                            onClick={handleClearReferenceImage}
+                                            className="text-xs text-red-400 hover:text-red-300 transition-colors"
+                                        >
+                                            Remove
+                                        </button>
+                                    )}
+                                </div>
+
+                                {!referenceImage ? (
+                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-white/10 rounded-xl cursor-pointer hover:border-zinc-500/50 transition-colors bg-black/30 hover:bg-black/40">
+                                        <div className="flex flex-col items-center justify-center py-4">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-zinc-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            <p className="text-xs text-zinc-400 text-center">
+                                                <span className="text-zinc-300 font-medium">Click to upload</span> or drag and drop
+                                            </p>
+                                            <p className="text-[10px] text-zinc-500 mt-1">Upload an image to animate</p>
+                                        </div>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImageSelect}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                ) : (
+                                    <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/40">
+                                        <img
+                                            src={referenceImagePreview}
+                                            alt="Reference preview"
+                                            className="w-full h-40 object-contain"
+                                        />
+                                        {isUploading && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                                                <div className="text-center">
+                                                    <div className="w-6 h-6 border-2 border-zinc-600 border-t-zinc-200 rounded-full animate-spin mb-2 mx-auto"></div>
+                                                    <p className="text-xs text-zinc-300">Uploading...</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {referenceImageUrl && !isUploading && (
+                                            <div className="absolute bottom-2 right-2 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded text-[10px] text-green-300">
+                                                ✓ Ready
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <p className="text-[10px] text-zinc-500 mt-2">
+                                    Upload an image to use as reference for video generation (image-to-video)
+                                </p>
+                            </div>
+
                             {/* Prompt Input */}
                             <div className="bg-zinc-900 border border-white/5 rounded-xl p-5 mb-6">
                                 <div className="flex items-center justify-between mb-3">
@@ -288,16 +387,16 @@ export default function VideoPage() {
                                     </div>
                                     <input
                                         type="range"
-                                        min="2"
-                                        max="10"
+                                        min="1"
+                                        max="5"
                                         step="1"
                                         value={settings.duration}
                                         onChange={(e) => setSettings({ ...settings, duration: parseInt(e.target.value) })}
                                         className="w-full h-1.5 bg-black/50 rounded-lg appearance-none cursor-pointer accent-zinc-200"
                                     />
                                     <div className="flex justify-between text-[10px] text-zinc-600 mt-2">
-                                        <span>2s</span>
-                                        <span>10s</span>
+                                        <span>1s</span>
+                                        <span>5s</span>
                                     </div>
                                 </div>
 
@@ -493,6 +592,100 @@ export default function VideoPage() {
                                     Use This Prompt
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Modal */}
+            {error && (
+                <div
+                    className="fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300"
+                    onClick={() => setError(null)}
+                >
+                    <div
+                        className="relative max-w-md w-full"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Glowing background effect */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-red-600 via-orange-500 to-red-600 rounded-2xl blur-lg opacity-30 animate-pulse"></div>
+
+                        <div className="relative bg-zinc-900/90 backdrop-blur-sm rounded-2xl border border-red-500/20 p-8 shadow-2xl">
+                            {/* Close button */}
+                            <button
+                                onClick={() => setError(null)}
+                                className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-300 transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                                </svg>
+                            </button>
+
+                            {/* Animated icon */}
+                            <div className="flex justify-center mb-6">
+                                <div className="relative">
+                                    {/* Pulsing rings */}
+                                    <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping"></div>
+                                    <div className="absolute -inset-3 rounded-full border border-red-500/30 animate-pulse"></div>
+                                    <div className="absolute -inset-6 rounded-full border border-red-500/10 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+
+                                    {/* Icon container */}
+                                    <div className="relative w-20 h-20 bg-gradient-to-br from-red-900/50 to-orange-900/50 rounded-full flex items-center justify-center border border-red-500/30 shadow-lg shadow-red-500/20">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="text-xl font-bold text-center bg-gradient-to-r from-red-300 via-orange-300 to-red-300 bg-clip-text text-transparent mb-3">
+                                Generation Failed
+                            </h3>
+
+                            {/* Error message */}
+                            <div className="bg-black/40 rounded-xl border border-red-500/10 p-4 mb-6">
+                                <p className="text-sm text-zinc-400 text-center leading-relaxed">
+                                    {error}
+                                </p>
+                            </div>
+
+                            {/* Animated dots */}
+                            <div className="flex justify-center gap-1 mb-6">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500/50 animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500/50 animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500/50 animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setError(null)}
+                                    className="flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-medium text-sm transition-all border border-white/5"
+                                >
+                                    Dismiss
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setError(null);
+                                        handleGenerate();
+                                    }}
+                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white rounded-xl font-medium text-sm transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                                        <path d="M3 3v5h5" />
+                                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                                        <path d="M16 16h5v5" />
+                                    </svg>
+                                    Try Again
+                                </button>
+                            </div>
+
+                            {/* Tips */}
+                            <p className="text-[10px] text-zinc-600 text-center mt-4">
+                                💡 Tip: Try simplifying your prompt or change image reference.
+                            </p>
                         </div>
                     </div>
                 </div>

@@ -737,6 +737,7 @@ export default function ChatPage() {
                                     disabled={isLoading}
                                 >
                                     <option value="perplexity-fast">Perplexity Fast</option>
+                                    <option value="nomnom">Gemini 3 nomnom</option>
                                     <option value="nova-fast">Nova Micro</option>
                                     <option value="mistral">Mistral</option>
                                     <option value="gemini-fast">Gemini 2.5</option>

@@ -269,12 +269,6 @@ export default function EditPage() {
                         </div>
                     )}
 
-                    {error && (
-                        <div className="text-red-300 text-sm bg-red-500/10 border border-red-500/30 rounded-lg p-3">
-                            {error}
-                        </div>
-                    )}
-
                     <button
                         onClick={handleSubmit}
                         disabled={!prompt.trim() || !uploadedImage || isSubmitting}
@@ -422,6 +416,100 @@ export default function EditPage() {
 
                         <div className="mt-4 bg-zinc-900/90 backdrop-blur-md px-6 py-3 rounded-2xl border border-yellow-500/20 max-w-2xl text-center">
                             <p className="text-yellow-100 text-sm sm:text-base font-medium line-clamp-2">{prompt}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Modal */}
+            {error && status === "error" && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300"
+                    onClick={() => setError(null)}
+                >
+                    <div
+                        className="relative max-w-md w-full"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Glowing background effect - Gold theme */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-yellow-600 via-orange-500 to-amber-600 rounded-2xl blur-lg opacity-30 animate-pulse"></div>
+
+                        <div className="relative bg-zinc-900/90 backdrop-blur-sm rounded-2xl border border-yellow-500/20 p-8 shadow-2xl">
+                            {/* Close button */}
+                            <button
+                                onClick={() => setError(null)}
+                                className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-300 transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+                                </svg>
+                            </button>
+
+                            {/* Animated icon */}
+                            <div className="flex justify-center mb-6">
+                                <div className="relative">
+                                    {/* Pulsing rings */}
+                                    <div className="absolute inset-0 rounded-full bg-yellow-500/20 animate-ping"></div>
+                                    <div className="absolute -inset-3 rounded-full border border-yellow-500/30 animate-pulse"></div>
+                                    <div className="absolute -inset-6 rounded-full border border-yellow-500/10 animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+
+                                    {/* Icon container */}
+                                    <div className="relative w-20 h-20 bg-gradient-to-br from-yellow-900/50 to-orange-900/50 rounded-full flex items-center justify-center border border-yellow-500/30 shadow-lg shadow-yellow-500/20">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Title */}
+                            <h3 className="text-xl font-bold text-center bg-gradient-to-r from-yellow-300 via-amber-300 to-yellow-300 bg-clip-text text-transparent mb-3">
+                                Transformation Failed
+                            </h3>
+
+                            {/* Error message */}
+                            <div className="bg-black/40 rounded-xl border border-yellow-500/10 p-4 mb-6">
+                                <p className="text-sm text-zinc-400 text-center leading-relaxed">
+                                    {error}
+                                </p>
+                            </div>
+
+                            {/* Animated dots */}
+                            <div className="flex justify-center gap-1 mb-6">
+                                <span className="w-1.5 h-1.5 rounded-full bg-yellow-500/50 animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500/50 animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-yellow-500/50 animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setError(null)}
+                                    className="flex-1 px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl font-medium text-sm transition-all border border-white/5"
+                                >
+                                    Dismiss
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setError(null);
+                                        handleSubmit();
+                                    }}
+                                    className="flex-1 px-4 py-3 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 text-white rounded-xl font-medium text-sm transition-all shadow-lg shadow-yellow-500/20 flex items-center justify-center gap-2"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                                        <path d="M3 3v5h5" />
+                                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                                        <path d="M16 16h5v5" />
+                                    </svg>
+                                    Try Again
+                                </button>
+                            </div>
+
+                            {/* Tips */}
+                            <p className="text-[10px] text-zinc-600 text-center mt-4">
+                                💡 Tip: Try a different prompt or use another image
+                            </p>
                         </div>
                     </div>
                 </div>

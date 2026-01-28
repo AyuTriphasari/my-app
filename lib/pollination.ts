@@ -104,6 +104,7 @@ export async function generateVideo(prompt: string, options?: {
     apiKey?: string;
     duration?: number;
     aspectRatio?: string;
+    imageUrl?: string; // Reference image URL for image-to-video
 }): Promise<string> {
     try {
         const {
@@ -113,7 +114,8 @@ export async function generateVideo(prompt: string, options?: {
             model = 'seedance-pro',
             apiKey,
             duration,
-            aspectRatio
+            aspectRatio,
+            imageUrl
         } = options || {};
 
         const params: any = {
@@ -126,6 +128,7 @@ export async function generateVideo(prompt: string, options?: {
 
         if (duration) params.duration = duration;
         if (aspectRatio) params.aspectRatio = aspectRatio;
+        if (imageUrl) params.image = imageUrl; // Reference image for image-to-video
 
         // Add API key if provided
         if (apiKey) {
@@ -140,6 +143,10 @@ export async function generateVideo(prompt: string, options?: {
         return response.data.url;
     } catch (error) {
         console.error('Error generating video:', error);
+        // Extract error message from axios response
+        if (axios.isAxiosError(error) && error.response?.data?.error) {
+            throw new Error(error.response.data.error);
+        }
         throw new Error('Failed to generate video');
     }
 }

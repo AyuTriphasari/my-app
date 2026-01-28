@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
         const duration = searchParams.get('duration');
         const aspectRatio = searchParams.get('aspectRatio');
         const userApiKey = searchParams.get('apiKey');
+        const imageUrl = searchParams.get('image'); // Reference image for image-to-video
 
         if (!prompt) {
             return NextResponse.json(
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
         // Add optional parameters if present
         if (duration) params.duration = duration;
         if (aspectRatio) params.aspectRatio = aspectRatio;
+        if (imageUrl) params.image = imageUrl; // Reference image for image-to-video
 
         const urlParams = new URLSearchParams(params);
 
@@ -82,7 +84,61 @@ export async function GET(request: NextRequest) {
                 statusText: videoResponse.statusText,
                 errorText: errorText
             });
-            throw new Error(`Video generation failed with status: ${videoResponse.status}`);
+
+            // Try to extract a user-friendly error message from nested JSON
+            let userMessage = `Video generation failed (${videoResponse.status})`;
+            try {
+                const errorJson = JSON.parse(errorText);
+                // Try to find the most specific error message
+                if (errorJson.error?.message) {
+                    let msg = errorJson.error.message;
+                    // Parse nested JSON strings
+                    try {
+                        const nested = JSON.parse(msg);
+                        if (nested.message) {
+                            msg = nested.message;
+                            // Try to parse even deeper nested JSON
+                            try {
+                                const deepNested = JSON.parse(msg.replace(/\\"/g, '"'));
+                                if (deepNested.error?.message) {
+                                    userMessage = deepNested.error.message;
+                                } else {
+                                    userMessage = msg;
+                                }
+                            } catch {
+                                // Check if message contains API error info
+                                if (msg.includes('message')) {
+                                    const match = msg.match(/"message":"([^"]+)"/);
+                                    if (match) {
+                                        userMessage = match[1].replace(/\\\\/g, '');
+                                    } else {
+                                        userMessage = msg;
+                                    }
+                                } else {
+                                    userMessage = msg;
+                                }
+                            }
+                        }
+                    } catch {
+                        userMessage = msg;
+                    }
+                }
+            } catch {
+                // Keep original message if JSON parsing fails
+            }
+
+            // Clean up the message - remove Request ID and other technical details
+            userMessage = userMessage
+                .replace(/\s*Request\s*id:?\s*[a-zA-Z0-9]+/gi, '')
+                .replace(/\s*Request\s*ID:?\s*[a-zA-Z0-9]+/gi, '')
+                .trim();
+
+            // If message is empty after cleanup, use default
+            if (!userMessage) {
+                userMessage = `Video generation failed (${videoResponse.status})`;
+            }
+
+            throw new Error(userMessage);
         }
 
         // Video might be a redirect or direct content.
