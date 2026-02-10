@@ -99,8 +99,9 @@ export default function GeneratePage() {
             console.log('Generating image with seed:', randomSeed);
 
             const imageUrl = await generateImage(prompt, {
-                ...settings,
-                model: 'imagen-4',
+                width: settings.width,
+                height: settings.height,
+                model: settings.model,
                 seed: randomSeed,
                 apiKey: apiKey || undefined
             });
