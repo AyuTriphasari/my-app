@@ -268,7 +268,7 @@ export async function POST(request: NextRequest) {
         // Max 3 iterations to prevent infinite loops
         // ============================================================
         const MAX_TOOL_ROUNDS = 5;
-        let conversationMessages = [...apiMessages];
+        let conversationMessages: any[] = [...apiMessages];
         let finalContent = '';
         let allToolStatuses: string[] = [];
         const toolCallCounts = new Map<string, number>(); // Track how many times each tool has been called
