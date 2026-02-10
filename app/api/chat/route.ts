@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
         const MAX_CALLS_PER_TOOL = 3; // Allow up to 3 calls per tool for creativity
 
         for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-            console.log(`[Tool Loop] Round ${round + 1}`);
+
 
             const response = await callPollinationsAPI(conversationMessages, model, apiKey, false, true);
 
@@ -297,11 +297,7 @@ export async function POST(request: NextRequest) {
                 throw new Error('No message in API response');
             }
 
-            // Debug
-            console.log(`[Tool Loop] Round ${round + 1} finish_reason:`, data.choices?.[0]?.finish_reason);
-            console.log(`[Tool Loop] Round ${round + 1} has tool_calls:`, !!message.tool_calls);
-            console.log(`[Tool Loop] Round ${round + 1} has function_call:`, !!message.function_call);
-            console.log(`[Tool Loop] Round ${round + 1} content preview:`, typeof message.content === 'string' ? message.content.substring(0, 150) : '(not string)');
+
 
             // Detect tool calls from multiple possible formats
             let toolCalls: ToolCall[] = [];
@@ -309,7 +305,7 @@ export async function POST(request: NextRequest) {
             // Format 1: Structured tool_calls (preferred)
             if (message.tool_calls && message.tool_calls.length > 0) {
                 toolCalls = message.tool_calls;
-                console.log(`[Tool Loop] Structured tool_calls:`, toolCalls.map((t: ToolCall) => t.function.name));
+
             }
             // Format 2: Legacy function_call
             else if (message.function_call) {
@@ -319,7 +315,7 @@ export async function POST(request: NextRequest) {
                     type: 'function',
                     function: { name: fc.name, arguments: fc.arguments },
                 }];
-                console.log(`[Tool Loop] Legacy function_call:`, fc.name);
+
             }
             // Format 3: Text-based tool call patterns
             else if (typeof message.content === 'string') {
@@ -352,9 +348,7 @@ export async function POST(request: NextRequest) {
                         } catch (e) { /* skip invalid JSON */ }
                     }
                 }
-                if (toolCalls.length > 0) {
-                    console.log(`[Tool Loop] Text-based tool calls:`, toolCalls.map(t => t.function.name));
-                }
+
             }
 
             // Filter out duplicate tool calls (same function + same args already executed)
@@ -363,9 +357,7 @@ export async function POST(request: NextRequest) {
                 return count < MAX_CALLS_PER_TOOL;
             });
 
-            if (newToolCalls.length < toolCalls.length) {
-                console.log(`[Tool Loop] Filtered ${toolCalls.length - newToolCalls.length} duplicate tool call(s)`);
-            }
+
 
             // No new tool calls → we have the final response
             if (newToolCalls.length === 0) {
@@ -374,7 +366,7 @@ export async function POST(request: NextRequest) {
                 if (!finalContent && allToolStatuses.length > 0) {
                     finalContent = 'Done! I\'ve processed the results above.';
                 }
-                console.log(`[Tool Loop] No more new tools, final content length: ${finalContent.length}`);
+
                 break;
             }
 
@@ -392,7 +384,7 @@ export async function POST(request: NextRequest) {
             const toolResults = await Promise.all(
                 newToolCalls.map(async (tc) => {
                     const result = await executeToolCall(tc);
-                    console.log(`[Tool Loop] ${tc.function.name} result:`, result.substring(0, 200));
+
                     return {
                         role: 'tool' as const,
                         tool_call_id: tc.id,

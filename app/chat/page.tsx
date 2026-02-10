@@ -451,7 +451,6 @@ export default function ChatPage() {
 
                             if (parsed.content) {
                                 accumulatedContent += parsed.content;
-                                console.log('[SSE Debug] content chunk received, total length:', accumulatedContent.length);
 
                                 // Update message with accumulated content
                                 setConversations(prev => prev.map(c =>

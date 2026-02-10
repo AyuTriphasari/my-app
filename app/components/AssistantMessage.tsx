@@ -103,28 +103,38 @@ const markdownComponents = {
     th: ({ children }: any) => <th className="p-4 font-semibold border-b border-white/10 uppercase text-xs tracking-wider text-zinc-400">{children}</th>,
     td: ({ children }: any) => <td className="p-4 text-zinc-300 align-top">{children}</td>,
     a: ({ href, children }: any) => {
-        // Check if the URL points to an image
-        const isImageUrl = href && /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)(\?.*)?$/i.test(href);
+        // Extract text from children (could be string or React element)
+        const childText = typeof children === 'string' ? children
+            : Array.isArray(children) ? children.map((c: any) => typeof c === 'string' ? c : '').join('')
+                : '';
+        const urlToCheck = href || childText || '';
+
+        // Check if the URL points to an image (more flexible regex)
+        const isImageUrl = urlToCheck && /\.(jpg|jpeg|png|gif|webp|bmp|svg|avif)([?~#&].*)?$/i.test(urlToCheck);
         if (isImageUrl) {
             return (
-                <div className="my-3">
+                <span className="block my-3">
                     <a href={href} target="_blank" rel="noopener noreferrer" className="block group/img">
-                        <div className="relative overflow-hidden rounded-xl border border-white/10 bg-zinc-900/50 max-w-sm">
+                        <span className="block relative overflow-hidden rounded-xl border border-white/10 bg-zinc-900/50 max-w-sm">
                             <img
                                 src={href}
-                                alt={typeof children === 'string' ? children : 'Image'}
+                                alt={childText || 'Image'}
                                 className="w-full h-auto object-cover rounded-xl transition-transform duration-300 group-hover/img:scale-105"
                                 loading="lazy"
                                 onError={(e) => {
                                     const target = e.target as HTMLImageElement;
                                     target.style.display = 'none';
-                                    target.parentElement!.innerHTML = `<div class="flex items-center gap-2 p-4 text-zinc-500 text-sm"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>Failed to load</div>`;
+                                    if (target.parentElement) {
+                                        target.parentElement.innerHTML = `<span class="flex items-center gap-2 p-3 text-zinc-500 text-xs">⚠️ Failed to load</span>`;
+                                    }
                                 }}
                             />
-                        </div>
-                        <div className="text-xs text-zinc-500 mt-1.5 truncate max-w-sm hover:text-blue-400 transition-colors">{typeof children === 'string' ? children : href}</div>
+                        </span>
+                        <span className="block text-xs text-zinc-500 mt-1 truncate max-w-sm hover:text-blue-400 transition-colors">
+                            {childText || href}
+                        </span>
                     </a>
-                </div>
+                </span>
             );
         }
         return (
@@ -132,8 +142,8 @@ const markdownComponents = {
         );
     },
     img: ({ src, alt }: any) => (
-        <div className="my-3">
-            <div className="relative overflow-hidden rounded-xl border border-white/10 bg-zinc-900/50 max-w-sm">
+        <span className="block my-3">
+            <span className="block relative overflow-hidden rounded-xl border border-white/10 bg-zinc-900/50 max-w-sm">
                 <img
                     src={src}
                     alt={alt || 'Image'}
@@ -142,12 +152,14 @@ const markdownComponents = {
                     onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
-                        target.parentElement!.innerHTML = `<div class="flex items-center gap-2 p-4 text-zinc-500 text-sm">Failed to load image</div>`;
+                        if (target.parentElement) {
+                            target.parentElement.innerHTML = `<span class="flex items-center gap-2 p-3 text-zinc-500 text-xs">Failed to load image</span>`;
+                        }
                     }}
                 />
-            </div>
-            {alt && alt !== 'Image' && <div className="text-xs text-zinc-500 mt-1.5">{alt}</div>}
-        </div>
+            </span>
+            {alt && alt !== 'Image' && <span className="block text-xs text-zinc-500 mt-1">{alt}</span>}
+        </span>
     ),
 };
 
