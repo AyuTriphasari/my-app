@@ -192,7 +192,7 @@ export default function ChatPage() {
                     content: "Tell me what you need—I’ll help you figure it out."
                 }
             ],
-            model: currentConversation?.model || 'deepseek',
+            model: currentConversation?.model || 'openai-large',
             timestamp: Date.now()
         };
         setConversations(prev => [newConversation, ...prev]);
@@ -451,6 +451,7 @@ export default function ChatPage() {
 
                             if (parsed.content) {
                                 accumulatedContent += parsed.content;
+                                console.log('[SSE Debug] content chunk received, total length:', accumulatedContent.length);
 
                                 // Update message with accumulated content
                                 setConversations(prev => prev.map(c =>

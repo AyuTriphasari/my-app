@@ -54,6 +54,7 @@ const SYSTEM_PROMPT = `You are ZLKcyber AI, an advanced and highly intelligent A
     getImages,
 - if using getImages tool, only return images that have extension .jpg, .jpeg, .png, .gif
 - always provide actual data, do not hallucinate or make up data yourself, use web_search tool to get actual data for data you dont know or getting newest data 2026.
+- tools usage should only be used 1 time each request/tool.
 - Code generation and debugging
 - Technical documentation
 - Data analysis and interpretation
@@ -201,7 +202,7 @@ export async function POST(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
         const userApiKey = searchParams.get('apiKey');
-        let { messages, model = 'deepseek' } = await request.json();
+        let { messages, model = 'openai-large' } = await request.json();
 
         // Check if any message contains an image
         const hasImage = messages.some((msg: ChatMessage) =>
@@ -431,9 +432,14 @@ export async function POST(request: NextRequest) {
                         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ tool_status: null })}\n\n`));
                     }
 
-                    // Send final content
+                    // Send final content in small chunks to simulate streaming
+                    // and avoid issues with very large single SSE events
                     if (finalContent) {
-                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: finalContent })}\n\n`));
+                        const CHUNK_SIZE = 50;
+                        for (let i = 0; i < finalContent.length; i += CHUNK_SIZE) {
+                            const chunk = finalContent.slice(i, i + CHUNK_SIZE);
+                            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: chunk })}\n\n`));
+                        }
                     }
 
                     controller.enqueue(encoder.encode('data: [DONE]\n\n'));
