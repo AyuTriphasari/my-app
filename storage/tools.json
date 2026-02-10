@@ -1,0 +1,126 @@
+[
+    {
+        "type": "function",
+        "function": {
+            "name": "get_current_weather",
+            "description": "Get current weather by latitude and longitude",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "latitude": {
+                        "type": "number",
+                        "description": "Latitude of the location"
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "description": "Longitude of the location"
+                    }
+                },
+                "required": [
+                    "latitude",
+                    "longitude"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "getCurrentTime",
+            "description": "Get current time by timezone using worldtimeapi.org",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "timezone": {
+                        "type": "string",
+                        "description": "Timezone of the location"
+                    }
+                },
+                "required": [
+                    "timezone"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_current_coin_price",
+            "description": "Get current coin price by coin name and currency",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "coin": {
+                        "type": "string",
+                        "description": "Coin name"
+                    },
+                    "currency": {
+                        "type": "string",
+                        "description": "Currency name"
+                    }
+                },
+                "required": [
+                    "coin",
+                    "currency"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": "Search the web for information",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query"
+                    }
+                },
+                "required": [
+                    "query"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "getImagesSafe",
+            "description": "Get images from the web using duckduckgo",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query"
+                    }
+                },
+                "required": [
+                    "query"
+                ]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "getImagesUnsafe",
+            "description": "Get NSFW images from the web",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query"
+                    }
+                },
+                "required": [
+                    "query"
+                ]
+            }
+        }
+    }
+]

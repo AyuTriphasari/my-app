@@ -11,6 +11,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.971.0",
     "@farcaster/miniapp-sdk": "^0.2.1",
+    "@mudbill/duckduckgo-images-api": "^2.0.1",
     "axios": "^1.13.2",
     "next": "16.1.1",
     "react": "19.2.3",

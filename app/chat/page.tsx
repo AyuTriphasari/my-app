@@ -43,14 +43,13 @@ const SUGGESTED_PROMPTS = [
 
 const CHAT_MODELS = [
     { value: 'perplexity-fast', label: 'Perplexity Fast', icon: '🔍' },
-    { value: 'nomnom', label: 'Gemini 3 nomnom', icon: '🍪' },
+    { value: 'minimax', label: 'MiniMax M2.1', icon: '🍪' },
     { value: 'nova-fast', label: 'Nova Micro', icon: '⚡' },
     { value: 'mistral', label: 'Mistral', icon: '🌊' },
     { value: 'openai', label: 'GPT-5', icon: '🤖' },
     { value: 'gemini-search', label: 'Gemini 3', icon: '💎' },
     { value: 'openai-fast', label: 'GPT-5 Mini', icon: '🚀' },
     { value: 'deepseek', label: 'DeepSeek', icon: '🧠' },
-    { value: 'claude', label: 'Claude', icon: '🎭' },
     { value: 'glm', label: 'GLM-4.7', icon: '🔮' },
     { value: 'openai-large', label: 'GPT-5.2', icon: '👑' },
 ];
@@ -193,7 +192,7 @@ export default function ChatPage() {
                     content: "Tell me what you need—I’ll help you figure it out."
                 }
             ],
-            model: currentConversation?.model || 'openai',
+            model: currentConversation?.model || 'deepseek',
             timestamp: Date.now()
         };
         setConversations(prev => [newConversation, ...prev]);
@@ -411,6 +410,7 @@ export default function ChatPage() {
 
             const decoder = new TextDecoder();
             let accumulatedContent = '';
+            let toolStatusText = '';
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -428,6 +428,27 @@ export default function ChatPage() {
 
                         try {
                             const parsed = JSON.parse(data);
+
+                            // Handle tool status events (shown while tools execute)
+                            if ('tool_status' in parsed) {
+                                toolStatusText = parsed.tool_status || '';
+                                if (toolStatusText) {
+                                    setConversations(prev => prev.map(c =>
+                                        c.id === targetId
+                                            ? {
+                                                ...c,
+                                                messages: [
+                                                    ...updatedMessages,
+                                                    { role: 'assistant', content: toolStatusText }
+                                                ],
+                                                timestamp: Date.now()
+                                            }
+                                            : c
+                                    ));
+                                }
+                                continue;
+                            }
+
                             if (parsed.content) {
                                 accumulatedContent += parsed.content;
 
@@ -499,14 +520,86 @@ export default function ChatPage() {
         setIsLoading(true);
 
         try {
-            const response = await sendChatMessage(messagesUpToPoint, currentConversation.model, apiKey);
-            setConversations(prev => prev.map(c =>
-                c.id === currentConversationId
-                    ? { ...c, messages: [...messagesUpToPoint, { role: 'assistant', content: response }] }
-                    : c
-            ));
+            const params = new URLSearchParams();
+            if (apiKey) params.set('apiKey', apiKey);
+
+            const response = await fetch(`/api/chat?${params.toString()}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: messagesUpToPoint,
+                    model: currentConversation.model,
+                }),
+            });
+
+            if (!response.ok) throw new Error('Failed to regenerate');
+
+            const reader = response.body?.getReader();
+            if (!reader) throw new Error('No reader');
+
+            const decoder = new TextDecoder();
+            let accumulatedContent = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') break;
+
+                        try {
+                            const parsed = JSON.parse(data);
+
+                            if ('tool_status' in parsed) {
+                                const toolStatusText = parsed.tool_status || '';
+                                if (toolStatusText) {
+                                    setConversations(prev => prev.map(c =>
+                                        c.id === currentConversationId
+                                            ? {
+                                                ...c,
+                                                messages: [...messagesUpToPoint, { role: 'assistant', content: toolStatusText }],
+                                                timestamp: Date.now()
+                                            }
+                                            : c
+                                    ));
+                                }
+                                continue;
+                            }
+
+                            if (parsed.content) {
+                                accumulatedContent += parsed.content;
+                                setConversations(prev => prev.map(c =>
+                                    c.id === currentConversationId
+                                        ? {
+                                            ...c,
+                                            messages: [...messagesUpToPoint, { role: 'assistant', content: accumulatedContent }],
+                                            timestamp: Date.now()
+                                        }
+                                        : c
+                                ));
+                            }
+                        } catch (e) {
+                            // Skip invalid JSON
+                        }
+                    }
+                }
+            }
         } catch (error) {
             console.error('Failed to regenerate:', error);
+            setConversations(prev => prev.map(c =>
+                c.id === currentConversationId
+                    ? {
+                        ...c,
+                        messages: [...messagesUpToPoint, { role: 'assistant', content: 'Sorry, failed to regenerate. Please try again.' }],
+                        timestamp: Date.now()
+                    }
+                    : c
+            ));
         } finally {
             setIsLoading(false);
         }
