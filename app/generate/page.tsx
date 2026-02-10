@@ -26,6 +26,17 @@ const ASPECT_RATIOS = [
     { label: "Wide", width: 1536, height: 768, icon: "🎬" }
 ];
 
+const MODELS = [
+    { value: 'flux', label: 'Flux Schnell', icon: '⚡', tag: 'Fast' },
+    { value: 'zimage', label: 'Z-Image Turbo', icon: '🚀', tag: 'Turbo' },
+    { value: 'gptimage', label: 'GPT Image 1 Mini', icon: '🤖', tag: 'GPT' },
+    { value: 'klein', label: 'FLUX.2 Klein 4B', icon: '✨', tag: '4B' },
+    { value: 'klein-large', label: 'FLUX.2 Klein 9B', icon: '💎', tag: '9B' },
+    { value: 'imagen-4', label: 'Imagen 4', icon: '🔮', tag: 'Google' },
+    { value: 'anime-nsfw', label: 'Anime NSFW', icon: '🔞', tag: '18+' },
+    { value: 'realism-nsfw', label: 'Realism NSFW', icon: '📸', tag: '18+' },
+];
+
 export default function GeneratePage() {
     const [prompt, setPrompt] = useState('');
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -95,16 +106,44 @@ export default function GeneratePage() {
         setGeneratedImage(null);
 
         try {
-            const randomSeed = Math.floor(Math.random() * 1000000000);
-            console.log('Generating image with seed:', randomSeed);
+            let imageUrl: string;
 
-            const imageUrl = await generateImage(prompt, {
-                width: settings.width,
-                height: settings.height,
-                model: settings.model,
-                seed: randomSeed,
-                apiKey: apiKey || undefined
-            });
+            if (settings.model === 'anime-nsfw' || settings.model === 'realism-nsfw') {
+                // Use /api/gen for NSFW models
+                const response = await fetch('/api/gen', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: prompt.trim(),
+                        width: settings.width,
+                        height: settings.height,
+                        model: settings.model,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errData.error || `Generation failed (${response.status})`);
+                }
+
+                const data = await response.json();
+                if (!data.files || data.files.length === 0) {
+                    throw new Error('No images returned from generator');
+                }
+                imageUrl = data.files[0];
+            } else {
+                // Use normal pollinations API
+                const randomSeed = Math.floor(Math.random() * 1000000000);
+                console.log('Generating image with seed:', randomSeed);
+
+                imageUrl = await generateImage(prompt, {
+                    width: settings.width,
+                    height: settings.height,
+                    model: settings.model,
+                    seed: randomSeed,
+                    apiKey: apiKey || undefined
+                });
+            }
 
             setGeneratedImage(imageUrl);
 
@@ -118,7 +157,7 @@ export default function GeneratePage() {
             saveImageToGallery(image);
             setHistory([image, ...history.slice(0, 9)]);
 
-            console.log('Successfully generated image');
+            //console.log('Successfully generated image');
         } catch (error) {
             console.error('Failed to generate image:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to generate image. Please try again.';
@@ -238,8 +277,8 @@ export default function GeneratePage() {
                         {/* Left Column - Controls */}
                         <div className="space-y-4 md:space-y-6">
                             {/* Prompt Input */}
-                            <div className="bg-zinc-900 border border-white/5 rounded-xl p-5 mb-6">
-                                <div className="flex items-center justify-between mb-3">
+                            <div className="bg-zinc-900 border border-white/5 rounded-xl p-4">
+                                <div className="flex items-center justify-between mb-2">
                                     <label className="block text-sm font-medium text-zinc-200">
                                         Prompt
                                     </label>
@@ -257,13 +296,16 @@ export default function GeneratePage() {
                                     onChange={(e) => setPrompt(e.target.value)}
                                     placeholder="Describe the image you want to generate..."
                                     className="w-full bg-black/50 border border-white/5 rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-zinc-500 text-zinc-200 placeholder-zinc-500 resize-none min-h-[120px] text-sm"
+                                    spellCheck={false}
+                                    autoComplete="off"
+                                    autoCorrect="off"
                                     onKeyPress={(e) => {
                                         if (e.key === 'Enter' && e.ctrlKey) {
                                             handleGenerate();
                                         }
                                     }}
                                 />
-                                <div className="mt-2 flex justify-end">
+                                <div className="mt-1.5 flex justify-end">
                                     <span className="text-xs text-zinc-600">{prompt.length} chars</span>
                                 </div>
                             </div>
@@ -320,30 +362,50 @@ export default function GeneratePage() {
                                 )}
                             </div>
 
-                            {/* Advanced Settings */}
+                            {/* Model Selection */}
                             <div className="bg-zinc-900 border border-white/5 rounded-xl overflow-hidden">
                                 <button
                                     onClick={() => setShowAdvanced(!showAdvanced)}
                                     className="w-full flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors"
                                 >
-                                    <h3 className="text-sm font-medium text-zinc-300">Model</h3>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-sm font-medium text-zinc-300">Model</h3>
+                                        <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+                                            {MODELS.find(m => m.value === settings.model)?.label || settings.model}
+                                        </span>
+                                    </div>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-zinc-500 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}><path d="m6 9 6 6 6-6" /></svg>
                                 </button>
                                 {showAdvanced && (
-                                    <div className="px-4 pb-4">
-                                        <select
-                                            value={settings.model}
-                                            onChange={(e) => setSettings({ ...settings, model: e.target.value })}
-                                            className="w-full bg-black/30 border border-white/5 rounded-lg p-2.5 text-zinc-300 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-500"
-                                        >
-                                            <option value="flux">Flux Schnell</option>
-                                            <option value="zimage">Z-Image Turbo</option>
-                                            <option value="turbo">SDXL Turbo</option>
-                                            <option value="gptimage">GPT Image 1 Mini</option>
-                                            <option value="klein">FLUX.2 Klein 4B</option>
-                                            <option value="klein-large">FLUX.2 Klein 9B</option>
-                                            <option value="imagen-4">imagen-4</option>
-                                        </select>
+                                    <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+                                        {MODELS.map((model) => (
+                                            <button
+                                                key={model.value}
+                                                onClick={() => setSettings({ ...settings, model: model.value })}
+                                                className={`relative p-3 rounded-lg border transition-all text-left group overflow-hidden ${settings.model === model.value
+                                                    ? 'bg-zinc-100 border-zinc-100 text-black shadow-lg shadow-white/5'
+                                                    : 'bg-black/30 border-white/5 text-zinc-400 hover:bg-zinc-800/80 hover:border-zinc-700'
+                                                    }`}
+                                            >
+                                                <div className="flex items-start justify-between gap-1">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <span className="text-base flex-shrink-0">{model.icon}</span>
+                                                        <span className="text-xs font-medium truncate">{model.label}</span>
+                                                    </div>
+                                                    {settings.model === model.value && (
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 text-black"><path d="M20 6 9 17l-5-5" /></svg>
+                                                    )}
+                                                </div>
+                                                <div className="mt-1.5">
+                                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${settings.model === model.value
+                                                        ? 'bg-black/10 text-black/60'
+                                                        : 'bg-white/5 text-zinc-500 group-hover:text-zinc-400'
+                                                        }`}>
+                                                        {model.tag}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        ))}
                                     </div>
                                 )}
                             </div>

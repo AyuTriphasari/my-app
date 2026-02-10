@@ -41,6 +41,20 @@ const SUGGESTED_PROMPTS = [
     "Write a creative short story"
 ];
 
+const CHAT_MODELS = [
+    { value: 'perplexity-fast', label: 'Perplexity Fast', icon: '🔍' },
+    { value: 'nomnom', label: 'Gemini 3 nomnom', icon: '🍪' },
+    { value: 'nova-fast', label: 'Nova Micro', icon: '⚡' },
+    { value: 'mistral', label: 'Mistral', icon: '🌊' },
+    { value: 'openai', label: 'GPT-5', icon: '🤖' },
+    { value: 'gemini-search', label: 'Gemini 3', icon: '💎' },
+    { value: 'openai-fast', label: 'GPT-5 Mini', icon: '🚀' },
+    { value: 'deepseek', label: 'DeepSeek', icon: '🧠' },
+    { value: 'claude', label: 'Claude', icon: '🎭' },
+    { value: 'glm', label: 'GLM-4.7', icon: '🔮' },
+    { value: 'openai-large', label: 'GPT-5.2', icon: '👑' },
+];
+
 export default function ChatPage() {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
@@ -56,6 +70,7 @@ export default function ChatPage() {
     const [renameValue, setRenameValue] = useState('');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isModelOpen, setIsModelOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -728,26 +743,48 @@ export default function ChatPage() {
                     <div className="flex items-center gap-2">
                         {currentConversation && (
                             <>
-                                <select
-                                    value={currentConversation.model}
-                                    onChange={(e) => setConversations(prev => prev.map(c =>
-                                        c.id === currentConversationId ? { ...c, model: e.target.value } : c
-                                    ))}
-                                    className="px-3 py-1.5 bg-zinc-800 border border-white/5 rounded-md text-zinc-300 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-600 cursor-pointer hover:bg-zinc-700 transition-colors"
-                                    disabled={isLoading}
-                                >
-                                    <option value="perplexity-fast">Perplexity Fast</option>
-                                    <option value="nomnom">Gemini 3 nomnom</option>
-                                    <option value="nova-fast">Nova Micro</option>
-                                    <option value="mistral">Mistral</option>
-                                    <option value="openai">GPT-5</option>
-                                    <option value="gemini-search">Gemini 3</option>
-                                    <option value="openai">GPT-5 Mini</option>
-                                    <option value="deepseek">DeepSeek</option>
-                                    <option value="claude">Claude</option>
-                                    <option value="glm">GLM-4.7</option>
-                                    <option value="openai-large">GPT-5.2</option>
-                                </select>
+                                <div className="relative">
+                                    <button
+                                        onClick={() => !isLoading && setIsModelOpen(!isModelOpen)}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-xs ${isModelOpen
+                                            ? 'bg-zinc-700 border-zinc-600 text-zinc-100'
+                                            : 'bg-zinc-800 border-white/5 text-zinc-300 hover:bg-zinc-700 hover:border-zinc-600'
+                                            } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                    >
+                                        <span>{CHAT_MODELS.find(m => m.value === currentConversation.model)?.icon || '🤖'}</span>
+                                        <span className="hidden sm:inline">{CHAT_MODELS.find(m => m.value === currentConversation.model)?.label || currentConversation.model}</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${isModelOpen ? 'rotate-180' : ''}`}><path d="m6 9 6 6 6-6" /></svg>
+                                    </button>
+
+                                    {isModelOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setIsModelOpen(false)} />
+                                            <div className="absolute right-0 top-full mt-2 z-50 w-64 max-h-80 overflow-y-auto bg-zinc-900 border border-white/10 rounded-xl shadow-2xl shadow-black/50 p-2 animate-in fade-in slide-in-from-top-2 duration-150">
+                                                {CHAT_MODELS.map((m) => (
+                                                    <button
+                                                        key={m.value}
+                                                        onClick={() => {
+                                                            setConversations(prev => prev.map(c =>
+                                                                c.id === currentConversationId ? { ...c, model: m.value } : c
+                                                            ));
+                                                            setIsModelOpen(false);
+                                                        }}
+                                                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${currentConversation.model === m.value
+                                                            ? 'bg-zinc-100 text-black'
+                                                            : 'text-zinc-300 hover:bg-zinc-800'
+                                                            }`}
+                                                    >
+                                                        <span className="text-base flex-shrink-0">{m.icon}</span>
+                                                        <span className="text-xs font-medium flex-1">{m.label}</span>
+                                                        {currentConversation.model === m.value && (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                                 <button
                                     onClick={handleExportConversation}
                                     className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-white/5 rounded-md transition-all"
@@ -852,6 +889,9 @@ export default function ChatPage() {
                                                         onChange={(e) => setEditedContent(e.target.value)}
                                                         className="w-full p-2 bg-zinc-900/50 border border-white/10 rounded text-zinc-200 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm"
                                                         rows={3}
+                                                        spellCheck={false}
+                                                        autoComplete="off"
+                                                        autoCorrect="off"
                                                     />
                                                     <div className="flex gap-2 justify-end">
                                                         <button
@@ -952,6 +992,9 @@ export default function ChatPage() {
                                 className="w-full bg-zinc-900 border border-white/5 rounded-2xl pl-12 pr-14 py-4 focus:outline-none focus:ring-1 focus:ring-zinc-700/50 focus:border-zinc-700 transition-all text-zinc-200 placeholder-zinc-500 resize-none max-h-[200px] shadow-sm"
                                 rows={1}
                                 style={{ minHeight: '56px' }}
+                                spellCheck={false}
+                                autoComplete="off"
+                                autoCorrect="off"
                             />
                             <button
                                 onClick={() => handleSend()}

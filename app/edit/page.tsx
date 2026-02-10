@@ -162,17 +162,32 @@ export default function EditPage() {
                     {/* Model Selection */}
                     <div>
                         <label className="block text-xs sm:text-sm font-semibold mb-2 text-yellow-200">Model</label>
-                        <select
-                            value={model}
-                            onChange={(e) => setModel(e.target.value as ImageEditModel)}
-                            className="w-full bg-black/50 border border-yellow-400/30 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-white text-sm"
-                        >
-                            {IMAGE_EDIT_MODELS.map((m) => (
-                                <option key={m} value={m}>
-                                    {m}
-                                </option>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {[
+                                { value: 'klein', label: 'Klein 4B', icon: '✨' },
+                                { value: 'klein-large', label: 'Klein 9B', icon: '💎' },
+                                { value: 'gptimage', label: 'GPT Image', icon: '🤖' },
+                                { value: 'seedream', label: 'Seedream', icon: '🌱' },
+                            ].map((m) => (
+                                <button
+                                    key={m.value}
+                                    type="button"
+                                    onClick={() => setModel(m.value as ImageEditModel)}
+                                    className={`relative p-3 rounded-lg border transition-all text-left group overflow-hidden ${model === m.value
+                                        ? 'bg-yellow-400 border-yellow-400 text-black shadow-lg shadow-yellow-500/20'
+                                        : 'bg-black/40 border-yellow-400/20 text-zinc-300 hover:bg-black/60 hover:border-yellow-400/40'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-base">{m.icon}</span>
+                                        <span className="text-xs font-medium">{m.label}</span>
+                                        {model === m.value && (
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="ml-auto flex-shrink-0"><path d="M20 6 9 17l-5-5" /></svg>
+                                        )}
+                                    </div>
+                                </button>
                             ))}
-                        </select>
+                        </div>
                     </div>
 
                     {/* Prompt */}
@@ -211,6 +226,9 @@ export default function EditPage() {
                             placeholder="Describe how you want to transform the image..."
                             className="w-full bg-black/50 border border-yellow-400/30 rounded-lg sm:rounded-xl p-3 sm:p-4 focus:outline-none focus:ring-2 focus:ring-yellow-400 text-white placeholder-gray-500 text-sm sm:text-base resize-none"
                             rows={4}
+                            spellCheck={false}
+                            autoComplete="off"
+                            autoCorrect="off"
                         />
                     </div>
 
