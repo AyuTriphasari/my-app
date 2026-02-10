@@ -178,7 +178,7 @@ export default function ChatPage() {
                     content: "Tell me what you need—I’ll help you figure it out."
                 }
             ],
-            model: currentConversation?.model || 'gemini-fast',
+            model: currentConversation?.model || 'openai',
             timestamp: Date.now()
         };
         setConversations(prev => [newConversation, ...prev]);
@@ -740,7 +740,7 @@ export default function ChatPage() {
                                     <option value="nomnom">Gemini 3 nomnom</option>
                                     <option value="nova-fast">Nova Micro</option>
                                     <option value="mistral">Mistral</option>
-                                    <option value="gemini-fast">Gemini 2.5</option>
+                                    <option value="openai">GPT-5</option>
                                     <option value="gemini-search">Gemini 3</option>
                                     <option value="openai">GPT-5 Mini</option>
                                     <option value="deepseek">DeepSeek</option>

@@ -85,7 +85,7 @@ export async function generateImage(prompt: string, options?: {
 
         const response = await axios.get(`${API_BASE_URL}/image`, {
             params,
-            timeout: 75000 // 75 second timeout for image generation (longer for image)
+            timeout: 90000 // 90 second timeout for image generation (longer for image)
         });
 
         return response.data.url;
@@ -137,7 +137,7 @@ export async function generateVideo(prompt: string, options?: {
 
         const response = await axios.get(`${API_BASE_URL}/video`, {
             params,
-            timeout: 120000 // 120 second timeout for video generation
+            timeout: 210000 // 210 second timeout for video generation
         });
 
         return response.data.url;
@@ -233,7 +233,7 @@ export async function editImage(params: {
             height: params.height ?? 1024,
             apiKey: params.apiKey,
         }, {
-            timeout: 120000, // 2 minute timeout
+            timeout: 210000, // 3.5 minute timeout
         });
 
         return response.data as EditImageResponse;
@@ -256,7 +256,7 @@ export async function uploadImageToR2(file: File): Promise<string> {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
-            timeout: 60000, // 60 second timeout
+            timeout: 90000, // 90 second timeout
         });
 
         return response.data.url;

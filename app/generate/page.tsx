@@ -41,7 +41,7 @@ export default function GeneratePage() {
     const [settings, setSettings] = useState({
         width: 1024,
         height: 1024,
-        model: 'flux'
+        model: 'imagen-4'
     });
     const confirm = useConfirm();
 
@@ -100,6 +100,7 @@ export default function GeneratePage() {
 
             const imageUrl = await generateImage(prompt, {
                 ...settings,
+                model: 'imagen-4',
                 seed: randomSeed,
                 apiKey: apiKey || undefined
             });
@@ -340,6 +341,7 @@ export default function GeneratePage() {
                                             <option value="gptimage">GPT Image 1 Mini</option>
                                             <option value="klein">FLUX.2 Klein 4B</option>
                                             <option value="klein-large">FLUX.2 Klein 9B</option>
+                                            <option value="imagen-4">imagen-4</option>
                                         </select>
                                     </div>
                                 )}

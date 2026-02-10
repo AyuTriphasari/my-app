@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
         const userApiKey = searchParams.get('apiKey');
-        let { messages, model = 'gemini-fast' } = await request.json();
+        let { messages, model = 'openai' } = await request.json();
 
         // Check if any message contains an image
         const hasImage = messages.some((msg: ChatMessage) =>
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         );
 
         if (hasImage && !modelWithVission.includes(model)) {
-            model = 'gemini-fast';
+            model = 'openai';
         }
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -78,18 +78,39 @@ export async function POST(request: NextRequest) {
         // Limit to last 10 messages to save tokens
         const limitedMessages = messages.slice(-10);
 
+        // Filter out system messages and UI-only greeting messages
+        const userMessages = limitedMessages.filter((msg: ChatMessage) => {
+            // Remove system messages to avoid duplicates
+            if (msg.role === 'system') return false;
+
+            // Remove UI greeting message (first assistant message in new chats)
+            if (msg.role === 'assistant' &&
+                typeof msg.content === 'string' &&
+                msg.content.includes("Tell me what you need")) {
+                return false;
+            }
+
+            return true;
+        });
+
         // Build messages array with system prompt
         const date = new Date().toUTCString();
+
+        // Ensure first message is user (not assistant) to avoid system -> assistant pattern
+        const validMessages = userMessages.filter((msg, index) => {
+            // Skip assistant messages that come before any user message
+            if (msg.role === 'assistant' && !userMessages.slice(0, index).some(m => m.role === 'user')) {
+                return false;
+            }
+            return true;
+        });
+
         const apiMessages = [
             {
                 role: 'system',
-                name: '',
                 content: `current date is ${date}. ${SYSTEM_PROMPT}`,
-                cache_control: {
-                    type: 'ephemeral',
-                },
             },
-            ...limitedMessages.map((msg: ChatMessage) => ({
+            ...validMessages.map((msg: ChatMessage) => ({
                 role: msg.role,
                 content: msg.content,
             })),

@@ -42,7 +42,7 @@ export default function VideoPage() {
     const [settings, setSettings] = useState({
         width: 1024,
         height: 1024,
-        model: 'seedance-pro',
+        model: 'grok-video',
         duration: 3,
         aspectRatio: '16:9'
     });
@@ -444,7 +444,7 @@ export default function VideoPage() {
                                             onChange={(e) => setSettings({ ...settings, model: e.target.value })}
                                             className="w-full bg-black/30 border border-white/5 rounded-lg p-2.5 text-zinc-300 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-500"
                                         >
-                                            <option value="seedance-pro">Seedance Pro</option>
+                                            <option value="grok-video">grok video Pro</option>
                                         </select>
                                     </div>
                                 )}
