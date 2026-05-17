@@ -18,8 +18,28 @@ async function getImagesSafer(query) {
     }
 }
 
+async function getImagesByCharacter(characterName) {
+    const url = `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&tags=${characterName}+ai_generated+rating:explicit&json=1&api_key=e3fbe95e3675eca026266efc2f21f43e65cd2b8f3607eeadaf82e418038111f9ea31b731aa9901982c82c94b797547379b99eb54ace980a0b8cf1274574a74d5&user_id=5922029`
+    const urlsankaku = `https://sankakuapi.com/v2/posts/keyset?lang=en&default_threshold=2&hide_posts_in_books=in-larger-tags&limit=40&page=1&tags=threshold:2+file_type:image+${characterName}`
+    const { data } = await axios.get(urlsankaku, {
+        headers: {
+            "origin": "https://www.sankakucomplex.com",
+            "Referer": "https://www.sankakucomplex.com/",
+            "Accept": "application/json",
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMwMzgyNDYsInN1Ykx2bCI6MCwibGV2ZWwiOjIwLCJpc3MiOiJodHRwczovL2NhcGktdjIuc2Fua2FrdWNvbXBsZXguY29tIiwidHlwZSI6IkJlYXJlciIsImF1ZCI6ImNvbXBsZXgiLCJzY29wZSI6ImNvbXBsZXgiLCJpYXQiOjE3NzA3NDIwMDMsImV4cCI6MTc3MTM0NjgwM30.YFR7RKn4VwLSk_ir9yudl__y42e_EJR9jqNzQF6LLec",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+        }
+    });
+    const responseData = data.data || [];
+    return responseData
+        .filter(r => r && r.sample_url)
+        .map(r => r.sample_url);
+    //return ["no image found"];
+}
+
+
 async function getImages(query) {
-    const serpUrl = `https://serpapi.com/search.json?engine=google_images&q=${query}&location=Austin,+Texas,+United+States&google_domain=google.com&hl=en&gl=us&safe=off&api_key=428b54194b5805b47536826f6bac81845e46d95c0e0f0775f19f865d1dd10f7d`;
+    const serpUrl = `https://serpapi.com/search.json?engine=yandex_images&text=${query}&yandex_domain=yandex.ru&family_mode=0&api_key=428b54194b5805b47536826f6bac81845e46d95c0e0f0775f19f865d1dd10f7d`;
     const { data } = await axios.get(serpUrl);
     return data.images_results.slice(0, 10).map((r) => r.original);
 }
@@ -73,4 +93,6 @@ module.exports = {
     web_search,
     getImages,
     getImagesSafer,
+    getImagesByCharacter,
 };
+

@@ -8,6 +8,22 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 // @ts-ignore
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
+// Domains that need proxy to bypass hotlink protection
+const PROXY_DOMAINS = ['sankakucomplex.com', 'rule34.xxx', 'v.sankakucomplex.com'];
+
+function getProxiedUrl(url: string): string {
+    if (!url) return url;
+    try {
+        const parsed = new URL(url);
+        if (PROXY_DOMAINS.some(d => parsed.hostname.includes(d))) {
+            return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+        }
+    } catch (e) {
+        // not a valid URL, return as-is
+    }
+    return url;
+}
+
 interface AssistantMessageProps {
     content: string;
     isLatest?: boolean;
@@ -117,7 +133,7 @@ const markdownComponents = {
                     <a href={href} target="_blank" rel="noopener noreferrer" className="block group/img">
                         <span className="block relative overflow-hidden rounded-xl border border-white/10 bg-zinc-900/50 max-w-sm">
                             <img
-                                src={href}
+                                src={getProxiedUrl(href)}
                                 alt={childText || 'Image'}
                                 className="w-full h-auto object-cover rounded-xl transition-transform duration-300 group-hover/img:scale-105"
                                 loading="lazy"
@@ -145,7 +161,7 @@ const markdownComponents = {
         <span className="block my-3">
             <span className="block relative overflow-hidden rounded-xl border border-white/10 bg-zinc-900/50 max-w-sm">
                 <img
-                    src={src}
+                    src={getProxiedUrl(src)}
                     alt={alt || 'Image'}
                     className="w-full h-auto object-cover rounded-xl"
                     loading="lazy"

@@ -52,7 +52,10 @@ const SYSTEM_PROMPT = `You are ZLKcyber AI, an advanced and highly intelligent A
     get_current_coin_price,
     web_search,
     getImages,
-- if using getImages tool, only return images that have extension .jpg, .jpeg, .png, .gif
+    getImagesByCharacter,
+- if user ask images and provide char name use getImagesByCharacter tool and do not add space for name use _ instead of space example: hyuuga hinata -> hyuuga_hinata and another tags add + between them example: hyuuga_hinata+fanart+1girl
+- if using getImages tool, only return images that have extension .jpg, .jpeg, .png, .gif, .webp and always return full links do not slice links to their extensions some link need authorization/signature to access them.
+- do not over explain for what you do. and what you got. just explain in simple way.
 - always provide actual data, do not hallucinate or make up data yourself, use web_search tool to get actual data for data you dont know or getting newest data 2026.
 - tools usage should only be used 1 time each request/tool.
 - Code generation and debugging
@@ -137,6 +140,20 @@ const TOOL_DEFINITIONS = [
                 required: ['query']
             }
         }
+    },
+    {
+        type: 'function' as const,
+        function: {
+            name: 'getImagesByCharacter',
+            description: 'Search and get images from the web. Use this when user asks to find or search images by character name.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    query: { type: 'string', description: 'Image search query' }
+                },
+                required: ['query']
+            }
+        }
     }
 ];
 
@@ -147,6 +164,7 @@ const TOOL_STATUS_LABELS: Record<string, string> = {
     get_current_coin_price: '💰 Fetching coin price...',
     web_search: '🔍 Searching the web...',
     getImages: '🖼️ Searching for images...',
+    getImagesByCharacter: '🎨 Searching character images...',
 };
 
 async function callPollinationsAPI(
@@ -272,11 +290,12 @@ export async function POST(request: NextRequest) {
         let conversationMessages: any[] = [...apiMessages];
         let finalContent = '';
         let allToolStatuses: string[] = [];
-        const toolCallCounts = new Map<string, number>(); // Track how many times each tool has been called
-        const MAX_CALLS_PER_TOOL = 3; // Allow up to 3 calls per tool for creativity
+        const toolCallCounts = new Map<string, number>();
+        const MAX_CALLS_PER_TOOL = 3;
+        const collectedImageUrls: string[] = []; // Collect image URLs to inject directly
+        const IMAGE_TOOL_NAMES = ['getImages', 'getImagesByCharacter', 'getImagesSafer'];
 
         for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-
 
             const response = await callPollinationsAPI(conversationMessages, model, apiKey, false, true);
 
@@ -296,7 +315,6 @@ export async function POST(request: NextRequest) {
             if (!message) {
                 throw new Error('No message in API response');
             }
-
 
 
             // Detect tool calls from multiple possible formats
@@ -351,7 +369,7 @@ export async function POST(request: NextRequest) {
 
             }
 
-            // Filter out duplicate tool calls (same function + same args already executed)
+            // Filter out tools that exceeded their call limit
             const newToolCalls = toolCalls.filter(tc => {
                 const count = toolCallCounts.get(tc.function.name) || 0;
                 return count < MAX_CALLS_PER_TOOL;
@@ -362,7 +380,6 @@ export async function POST(request: NextRequest) {
             // No new tool calls → we have the final response
             if (newToolCalls.length === 0) {
                 finalContent = message.content || '';
-                // If model only returned tool_calls with no content, use a fallback
                 if (!finalContent && allToolStatuses.length > 0) {
                     finalContent = 'Done! I\'ve processed the results above.';
                 }
@@ -384,6 +401,16 @@ export async function POST(request: NextRequest) {
             const toolResults = await Promise.all(
                 newToolCalls.map(async (tc) => {
                     const result = await executeToolCall(tc);
+
+                    // If this is an image tool, collect the URLs directly
+                    if (IMAGE_TOOL_NAMES.includes(tc.function.name)) {
+                        try {
+                            const urls = JSON.parse(result);
+                            if (Array.isArray(urls)) {
+                                collectedImageUrls.push(...urls.filter((u: string) => typeof u === 'string' && u.startsWith('http')));
+                            }
+                        } catch (e) { /* not JSON array, skip */ }
+                    }
 
                     return {
                         role: 'tool' as const,
@@ -425,13 +452,21 @@ export async function POST(request: NextRequest) {
                     }
 
                     // Send final content in small chunks to simulate streaming
-                    // and avoid issues with very large single SSE events
                     if (finalContent) {
                         const CHUNK_SIZE = 50;
                         for (let i = 0; i < finalContent.length; i += CHUNK_SIZE) {
                             const chunk = finalContent.slice(i, i + CHUNK_SIZE);
                             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: chunk })}\n\n`));
                         }
+                    }
+
+                    // Inject collected image URLs directly as markdown images
+                    // This preserves full URLs with auth query params
+                    if (collectedImageUrls.length > 0) {
+                        const imageMarkdown = '\n\n' + collectedImageUrls
+                            .map((url, i) => `![Image ${i + 1}](${url})`)
+                            .join('\n\n');
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: imageMarkdown })}\n\n`));
                     }
 
                     controller.enqueue(encoder.encode('data: [DONE]\n\n'));

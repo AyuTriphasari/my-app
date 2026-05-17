@@ -19,7 +19,7 @@ const EXAMPLE_PROMPTS = [
     "Minimalist modern architecture with clean lines and glass"
 ];
 
-const ASPECT_RATIOS = [
+const QUICK_SIZES = [
     { label: "Square", width: 1024, height: 1024, icon: "⬜" },
     { label: "Portrait", width: 768, height: 1024, icon: "📱" },
     { label: "Landscape", width: 1024, height: 768, icon: "🖼️" },
@@ -334,30 +334,72 @@ export default function GeneratePage() {
                                 )}
                             </div>
 
-                            {/* Quick Settings */}
+                            {/* Size Settings */}
                             <div className="bg-zinc-900 border border-white/5 rounded-xl overflow-hidden">
                                 <button
                                     onClick={() => setShowAspectRatio(!showAspectRatio)}
                                     className="w-full flex items-center justify-between p-4 hover:bg-zinc-800/50 transition-colors"
                                 >
-                                    <h3 className="text-sm font-medium text-zinc-300">Aspect Ratio</h3>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-sm font-medium text-zinc-300">Size</h3>
+                                        <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
+                                            {settings.width}×{settings.height}
+                                        </span>
+                                    </div>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-zinc-500 transition-transform ${showAspectRatio ? 'rotate-180' : ''}`}><path d="m6 9 6 6 6-6" /></svg>
                                 </button>
                                 {showAspectRatio && (
-                                    <div className="px-4 pb-4 grid grid-cols-2 gap-2">
-                                        {ASPECT_RATIOS.map((ratio) => (
-                                            <button
-                                                key={ratio.label}
-                                                onClick={() => selectAspectRatio(ratio.width, ratio.height)}
-                                                className={`p-3 rounded-lg border transition-all flex items-center justify-between group ${settings.width === ratio.width && settings.height === ratio.height
-                                                    ? 'bg-zinc-100 border-zinc-100 text-black'
-                                                    : 'bg-black/30 border-white/5 text-zinc-400 hover:bg-zinc-800'
-                                                    }`}
-                                            >
-                                                <div className="text-xs font-medium">{ratio.label}</div>
-                                                <div className={`text-[10px] ${settings.width === ratio.width && settings.height === ratio.height ? 'text-zinc-500' : 'text-zinc-600'}`}>{ratio.width}x{ratio.height}</div>
-                                            </button>
-                                        ))}
+                                    <div className="px-4 pb-4 space-y-3">
+                                        {/* Quick presets */}
+                                        <div className="grid grid-cols-4 gap-2">
+                                            {QUICK_SIZES.map((size) => (
+                                                <button
+                                                    key={size.label}
+                                                    onClick={() => selectAspectRatio(size.width, size.height)}
+                                                    className={`p-2 rounded-lg border transition-all text-center ${settings.width === size.width && settings.height === size.height
+                                                        ? 'bg-zinc-100 border-zinc-100 text-black'
+                                                        : 'bg-black/30 border-white/5 text-zinc-400 hover:bg-zinc-800'
+                                                        }`}
+                                                >
+                                                    <div className="text-sm">{size.icon}</div>
+                                                    <div className="text-[10px] font-medium mt-0.5">{size.label}</div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {/* Custom inputs */}
+                                        <div className="flex gap-3 items-center">
+                                            <div className="flex-1">
+                                                <label className="block text-[10px] text-zinc-500 mb-1 uppercase tracking-wider">Width</label>
+                                                <input
+                                                    type="number"
+                                                    value={settings.width}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value);
+                                                        if (!isNaN(val) && val > 0) setSettings({ ...settings, width: val });
+                                                    }}
+                                                    min={256}
+                                                    max={2048}
+                                                    step={64}
+                                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                />
+                                            </div>
+                                            <div className="text-zinc-600 mt-4">×</div>
+                                            <div className="flex-1">
+                                                <label className="block text-[10px] text-zinc-500 mb-1 uppercase tracking-wider">Height</label>
+                                                <input
+                                                    type="number"
+                                                    value={settings.height}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value);
+                                                        if (!isNaN(val) && val > 0) setSettings({ ...settings, height: val });
+                                                    }}
+                                                    min={256}
+                                                    max={2048}
+                                                    step={64}
+                                                    className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-500 focus:border-zinc-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
