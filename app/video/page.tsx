@@ -440,7 +440,7 @@ export default function VideoPage() {
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-sm font-medium text-zinc-300">Model</h3>
                                         <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-0.5 rounded-full">
-                                            {[{ value: 'grok-video', label: 'Grok Video Pro' }, { value: 'wan', label: 'Wan 2' }].find(m => m.value === settings.model)?.label || settings.model}
+                                            {[{ value: 'grok-video', label: 'Grok Video Pro' }, { value: 'ltx-2', label: 'ltx-2' }].find(m => m.value === settings.model)?.label || settings.model}
                                         </span>
                                     </div>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`text-zinc-500 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}><path d="m6 9 6 6 6-6" /></svg>
@@ -449,7 +449,7 @@ export default function VideoPage() {
                                     <div className="px-4 pb-4 grid grid-cols-2 gap-2">
                                         {[
                                             { value: 'grok-video', label: 'Grok Video Pro', icon: '🎬', tag: 'Pro' },
-                                            { value: 'wan', label: 'Wan 2', icon: '🌊', tag: 'Fast' },
+                                            { value: 'ltx-2', label: 'ltx-2', icon: '🌊', tag: 'Fast' },
                                         ].map((m) => (
                                             <button
                                                 key={m.value}
